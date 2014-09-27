@@ -13,6 +13,8 @@ http://www.hel.fi/hki/ksv/fi/Liikennesuunnittelu/Liikennetutkimus
 
 Kansioissa on vuoden 2011 konelaskennat alkuperäisinä. Saat auki Excelissä sarkainten avulla. Alkuperäisissä luvuissa voi on virheitä ja puutteita. Pisteet merkitsevät seuraavaa: Tulee kuukausittain
 
+ZIP -paketissa PP_04_10.zip on koneellisia pyörälaskentoja vuosilta 2004-10. Tiedoissa on puutteita. Voi olla liian suuria lukuja tai kone on lakannut toimimasta. Numerokoodin lopussa on pyöräpisteen numero, alku on laitteen numero, jolla lasketaan.
+
 102=Kuusisaarensilta
 103=Kulosaarensilta
 107=Eläintarhanlahti
@@ -21,9 +23,6 @@ Kansioissa on vuoden 2011 konelaskennat alkuperäisinä. Saat auki Excelissä sarka
 115=Eteläesplanadi
 116=Kantelettarentie
 1171=Lauttasaaren silta, etelä
-1172= Lauttasaaren silta, Pohjoinen
+1172=Lauttasaaren silta, Pohjoinen
 118=Kehä I, Vantaajoki
 120=Nordenskiöldinpolku
-
-ZIP -paketissa PP_04_10.zip on koneellisia pyörälaskentoja vuosilta 2004-10. Tiedoissa on puutteita. Voi olla liian suuria lukuja tai kone on lakannut toimimasta. Numerokoodin lopussa on pyöräpisteen numero, alku on laitteen numero, jolla lasketaan.
-
