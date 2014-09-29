@@ -5,15 +5,17 @@ Ideana on polkupyörien konelaskentapisteiden datan yhdistäminen ilmatieteenlai
 
 Kansiot:
 
-* _R/_  Datan siivoukseen ja analyysiin liittyvät R-scriptit. *a script that produce the ' pyoralaksennat_table_20120317.csv' (note the typo!).*
-* _data_ Kansiossa on vuoden 2011 konelaskennat alkuperäisinä, sekä ZIP -paketissa PP_04_10.zip konelaskennat vuosilta 2004-2010.
-* _output_ Alkuperäisdatasta scriptillä tuotetut siivotut datasetit
+* _[R/](https://github.com/apoikola/fillarilaskennat/tree/master/R)_  Datan siivoukseen ja analyysiin liittyvät R-scriptit.
+* _[data/](https://github.com/apoikola/fillarilaskennat/tree/master/data)_ Kansiossa on vuosien 2004-2011 polkupyörien konelaskentadatat alkuperäisinä (saatu Helsingin kaupunkisuunnitteluvirastosta), [Konelaskentapisteiden koordinaatit](https://github.com/apoikola/fillarilaskennat/blob/master/data/Laskentapisteet%202011%20-%20Laskentapisteet%202011%20FIX.csv), sekä [Kaisaniemen sääaseman havainnot 01/2004 - 08/2014](https://github.com/apoikola/fillarilaskennat/blob/master/data/kaisaniemi_saa_200401-201408.csv)
+* _[output/](https://github.com/apoikola/fillarilaskennat/tree/master/output)_ Alkuperäisestä konelaskentadatasta scriptillä tuotetut siivotut datasetit (esim. _[kuu_20140927.csv](https://github.com/apoikola/fillarilaskennat/blob/master/output/%20kuu_20140927.csv)_)
 
 
 
 ## Ilmatieteenlaitoksen säähavaintodata
 
-https://ilmatieteenlaitos.fi/avoin-data
+Data haettu [FMI:n rajapinnasta](https://ilmatieteenlaitos.fi/avoin-data)
+
+rrday=sade, tday=keskilämpötila, snow=lumen paksuus(?), tmin=minimilämpötila, tmax=maksimilämpötila
 
 
 ## Helsingin koneellisetn pyörälaskentojen data
