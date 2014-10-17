@@ -1,5 +1,7 @@
 ## Script for downloading FMI weather data for fillarilaskennat
 
+# Note about the data: NaN tarkoittaa, että ko. mittausarvoa ei ole päivältä. -1 tarkoittaa sateessa ja lumessa sitä, että ei ole satanut ollenkaan/lunta ei ole ollenkaan.
+
 ## INSTALL FMI PACKAGE #########
 
 # Follow instructions in https://github.com/rOpenGov/fmi/blob/master/vignettes/fmi_tutorial.md
