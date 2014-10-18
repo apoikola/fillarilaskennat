@@ -30,18 +30,43 @@ plot(m1)
 m2 <- gam(count ~ s(tday, k=10) + as.factor(Year) + s(Day), family=nb(link="log"), optimizer="perf", data=d)                                                                           
 
 m3 <- gam(count ~ 
-            s(tday, k=10) + Year + s(Day, bs="cc", k=20) +
+            s(tday, k=10) + Year + s(Day, bs="cc", k=100) +
             I(snow==0) +  snow +
-            I(rrday==0) + rrday + weekday
+            I(rrday==0) + rrday +
+            I((snow>0)*rrday) +
+            weekday
           , 
           family=nb(link="log"), optimizer="perf", data=d)                                                                           
 m3
 summary(m3)
-plot(m3)
+# rday ja snow on kokeiltu epälineaarisena
+plot(m3, shade=T) # t lähes lineaarinen
 hist(resid(m3), n=100)
-plot(resid(m3), type="l")
-plot(resid(m3)[d$Year==2004], type="l")
+plot(resid(m3), type="l") # Alussa paskaa?, muutama paha piikki vielä
+plot(resid(m3)[d$Year==2004], type="l") # Vuodenaika-viikonpäivä-interaktio!
+plot(resid(m3)[d$Year==2005], type="l") 
+plot(resid(m3)[d$Year==2006], type="l") # Talvella jotain viikkojutskaa
+plot(resid(m3)[d$Year==2007], type="l") 
 acf(resid(m3))
-ar(resid(m3)) # Päiville 1 ja 2 selvä efekti, myös edelleen joku viikkoefekti
+ar(resid(m3)) # Päiville 1 ja 2 selvä efekti, myös edelleen joku viikkoefekti (vuodenaikainteraktio?)
+# Vielä korrelaatiot selittäjien kanssa
+
+# TODO
+# - tmin, tmax
+# - lagit jotenkin (stan, tai kokeillaan lumi ym. taaksepäin?)
+# - muut mittauspisteet, entä toinen lämpötilasetti?
+# - 
+
+m4 <- gam(count ~ 
+            s(tday, k=10) + Year + s(Day, bs="cc", k=100) +
+            rrday*weekday +
+            I(rrday==0)*weekday +
+            snow*weekday +
+            I(snow==0)*weekday
+          , 
+          family=nb(link="log"), optimizer="perf", data=d)    
+# Clear weekday snow interaction
+# Viikko-lägitys-efekti katosi, tai ainakin pieneni
+spikeSlabGAM?
 
 
