@@ -42,4 +42,5 @@ hist(resid(m3), n=100)
 plot(resid(m3), type="l")
 plot(resid(m3)[d$Year==2004], type="l")
 acf(resid(m3))
+ar(resid(m3))
 
