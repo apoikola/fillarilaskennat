@@ -69,4 +69,11 @@ m4 <- gam(count ~
 # Viikko-lägitys-efekti katosi, tai ainakin pieneni
 spikeSlabGAM?
 
-
+m5 <- gam(count ~ s(Day, k=5, bs="cc") + 
+            s(tday, k=10) + Year + 
+            rrday*weekday +
+            I(rrday==0)*weekday +
+            snow*weekday +
+            I(snow==0)*weekday
+          , 
+          family=nb(link="log"), optimizer="perf", data=d)   
