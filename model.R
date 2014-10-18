@@ -48,12 +48,8 @@ plot(resid(m3)[d$Year==2005], type="l")
 plot(resid(m3)[d$Year==2006], type="l") # Talvella jotain viikkojutskaa
 plot(resid(m3)[d$Year==2007], type="l") 
 acf(resid(m3))
-<<<<<<< HEAD
 ar(resid(m3)) # Päiville 1 ja 2 selvä efekti, myös edelleen joku viikkoefekti (vuodenaikainteraktio?)
 # Vielä korrelaatiot selittäjien kanssa
-=======
-ar(resid(m3))
->>>>>>> 94d7db5faca793970c947a9303c63a15ae7752e6
 
 # TODO
 # - tmin, tmax
@@ -75,9 +71,9 @@ spikeSlabGAM?
 
 m5 <- gam(count ~ s(Day, k=5, bs="cc") + 
             s(tday, k=10) + Year + 
-            rrday*weekday +
+            rrday + snow + 
+            I((snow>0)*rrday) +
             I(rrday==0)*weekday +
-            snow*weekday +
-            I(snow==0)*weekday
+            I(snow==0)*weekday 
           , 
           family=nb(link="log"), optimizer="perf", data=d)   
