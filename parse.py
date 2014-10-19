@@ -54,3 +54,6 @@ def data_lines(evs):
                     yield errc, site, date, iday, hour, count
                 
             
+for line in data_lines(events(ilines(ifilenames))):
+    print line
+    
