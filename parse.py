@@ -40,15 +40,17 @@ def data_lines(evs):
         elif evt=="date":
             date = info
             hcount = 0
-            yield date
         elif evt=="site":
-            site = info
+            site, filename = info
             yield site
         elif evt=="hourly":
             if date==None or site==None: continue
             else:
                 hcount += 1
-                yield site, date, info
                 if hcount>24:
                     raise ValueError, "Oops, hcount goes over 24."
+                hour, counts = info
+                for iday, count in enumerate(counts):
+                    yield errc, site, date, iday, hour, count
+                
             
