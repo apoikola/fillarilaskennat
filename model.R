@@ -2,6 +2,8 @@ library("dplyr")
 library("ggplot2")
 library("lubridate")
 library("tidyr")
+library("gridExtra")
+
 
 bike.raw <- tbl_df(read.csv("output/ kuu_20140927.csv"))
 bike.raw$Date <- ymd(bike.raw$Date)
@@ -21,6 +23,10 @@ w.df <- weather.df %>% filter(name == "Helsinki Kaisaniemi") %>% mutate(Date=dat
 d <- inner_join(w.df, b.df, by="Date")
 
 d <- filter(d, count<5000) # Is this ok? Negbin is not enough to handle extreme outliers, maybe
+
+# Change NA's in snow to 0
+d$snow[is.na(d$snow)] <- 0
+stopifnot(!any(is.na(d)))
 
 library(mgcv)
 
@@ -77,3 +83,56 @@ m5 <- gam(count ~ s(Day, k=5, bs="cc") +
             I(snow==0)*weekday 
           , 
           family=nb(link="log"), optimizer="perf", data=d)   
+
+## Plot m5 with ggplot2 
+# from http://stackoverflow.com/questions/19735149/is-it-possible-to-plot-the-smooth-components-of-a-gam-fit-with-ggplot2
+source("functions.R")
+smooths <- EvaluateSmooths(m5)
+# p.smooth <- ggplot(smooths, aes(x.val, value)) + 
+#   geom_line() + 
+#   geom_line(aes(y=value + 2*se), linetype="dashed") + 
+#   geom_line(aes(y=value - 2*se), linetype="dashed") + 
+#   facet_grid(. ~ x.var, scales="free")
+p.day <- ggplot(subset(smooths, x.var=="Day"), aes(x=x.val, y=value))+ geom_line() + 
+  geom_line(aes(y=value + 2*se), linetype="dashed") + 
+  geom_line(aes(y=value - 2*se), linetype="dashed") +
+  labs(x="Day of the year", y="Coefficient")
+p.temp <- ggplot(subset(smooths, x.var=="tday"), aes(x=x.val, y=value))+ geom_line() + 
+  geom_line(aes(y=value + 2*se), linetype="dashed") + 
+  geom_line(aes(y=value - 2*se), linetype="dashed") +
+  labs(x="Temperature (day mean)", y="Coefficient")
+p.smooth <- arrangeGrob(p.day, p.temp, nrow=1, main="Effect of day and temperature")
+
+# Plot the rest of the coefficients
+coefs <- m5$coefficients[-unlist(lapply(m5$smooth, function(x) x$first.para:x$last.para))]
+names(coefs) <- gsub("I\\(rrday == 0\\)TRUE", "NoRain", names(coefs))
+names(coefs) <- gsub("I\\(snow == 0\\)TRUE", "NoSnow", names(coefs))
+# Extract weekday stuff
+coefs.weekdays <- coefs[grep("weekday", names(coefs))]
+names(coefs.weekdays) <- gsub("weekday", "", names(coefs.weekdays))
+weekdays <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+temp <- strsplit(names(coefs.weekdays), split=":")
+stopifnot(all(sapply(temp, length) <=2))
+temp[sapply(temp, length)==1] <- lapply(temp[sapply(temp, length)==1], c, "-")
+# Reorder
+temp[!(sapply(temp, "[", 1) %in% weekdays)] <- lapply(temp[!(sapply(temp, "[", 1) %in% weekdays)], function(x) x[2:1])
+# Process into data frame
+cw.df <- data.frame(Weekday=sapply(temp, "[", 1), Factor=sapply(temp, "[", 2), Coefficient=coefs.weekdays, row.names=NULL)
+cw.df$Weekday <- factor(cw.df$Weekday, levels=weekdays)
+p.cw <- ggplot(cw.df, aes(x=Factor, y=Coefficient)) + geom_bar(stat="identity") + facet_wrap(~ Weekday, nrow=1) + ggtitle("Effects of weekdays")
+  
+# Extract the rest
+coefs.other <- coefs[-grep("weekday", names(coefs))]
+# Remove Intercept for now (how to interpret?)
+coefs.other <- coefs.other[-grep("Intercept", names(coefs.other))]
+co.df <- data.frame(Factor=names(coefs.other), Coefficient=coefs.other)
+p.co <- ggplot(co.df, aes(x=Factor, y=Coefficient)) + geom_bar(stat="identity") + ggtitle("Other effects")
+
+# Plot residuals
+resid.df <- data.frame(d, residuals=m5$residuals)
+p.r <- ggplot(resid.df, aes(x=Day, y=residuals)) + geom_line() + facet_grid(Year ~ ., scales="free") + ggtitle("Residuals left")
+
+# Put together
+p.fillari <- arrangeGrob(p.smooth, p.cw, p.co, p.r, ncol=1, heights=c(0.2, 0.2, 0.2, 0.4))
+ggsave(plot=p.fillari, file="figures/Fillari_M5.png", width=8, height=15)
+
