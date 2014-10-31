@@ -72,7 +72,7 @@ def data_lines(evs):
             if len(hours)==0:
                 for hour, counts in hdata.iteritems():
                     for iday, count in enumerate(counts):
-                        yield errors, (site, channel, date, iday, hour, count)
+                        yield errors, (filename, site, channel, date, iday, hour, count)
             else:
                 errors.append("incomplete")
             hdata = {}
@@ -84,7 +84,8 @@ def date_vars(dtuple, iday):
     return date.strftime("%Y-%m-%d"), days, date.strftime("%A"), date.timetuple().tm_yday
 
 
-print "site channel date day weekday yday hour count"
-for errors, (site, channel, dtuple, iday, hour, count) in data_lines(events(ilines(ifilenames))):
-    print "%s %s %s %s %s %s %s %s" % ((site, channel) + date_vars(dtuple, iday) + (hour, "NA" if count==None else count))
+print "file site channel date day weekday yday hour count"
+for errors, (filename, site, channel, dtuple, iday, hour, count) in data_lines(events(ilines(ifilenames))):
+    print "%s %s %s %s %s %s %s %s %s" % (
+      (filename, site, channel) + date_vars(dtuple, iday) + (hour, "NA" if count==None else count))
 
