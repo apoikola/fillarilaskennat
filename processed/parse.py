@@ -1,9 +1,9 @@
 import re, os, datetime
 
-file_shell_rex = "data/200[0-9]_[0-9][0-9]_[a-z]*/*.[0-9][0-9][0-9]"
-site_rex = re.compile("^\*SITE NUMBER: ([0-9]+)$")
+file_shell_rex = "data/200[0-9]_[0-9][0-9]_[a-z]*/*.2[0-9][0-9]"
+site_rex = re.compile("^\*SITE NUMB\s*ER: ([0-9\s]+)$")
 channel_rex = re.compile("^\*CHANNEL\s*:\s+([0-9]+)\s+OF")
-date_rex = re.compile("^DATE\s+([0-9]?[0-9])/([0-1]?[0-9])/([0-3]?[0-9])\s[0-9\s]+AVERAGE$")
+date_rex = re.compile("^DATE\s+([0-9]?[0-9])\s*/([0-1]?[0-9])/([0-3]?[0-9])\s[0-9\s]+AVERAGE$")
 count_rex = re.compile("[12]?[0-9]\s+[0-9-]+\s+[0-9-]+\s+[0-9-]+\s+[0-9-]+\s+[0-9-]+\s+[0-9-]+\s+[0-9-]+\s+[0-9-]+")
 totals_rex = re.compile("^TOTALS$")
 
@@ -24,7 +24,7 @@ def events(lines):
         else:
             m = re.match(site_rex, line)
             if m:
-                yield 'site', (int(m.groups()[0]), ifilename)
+                yield 'site', (int(re.sub("\s*", "", m.groups()[0])), ifilename)
 	    else:
                 m = re.match(channel_rex, line)
                 if m:
@@ -50,12 +50,13 @@ def data_lines(evs):
     errors = []
     for evt, info in evs:
         if evt=="error":
-            errors.append("format")
+            errors.append("%s %s %s format %s"%(filename, site, date, info))
             continue
         elif evt=="eof":
             date, site, hdata = None, None, {}
         elif evt=="site":
             site, filename = info
+            channel = '0'
         elif evt=="channel":
             channel = info[0]
         elif evt=="date":
@@ -66,15 +67,18 @@ def data_lines(evs):
                 continue
             else:
                 hour, counts = info
-                hours.remove(hour)
-                hdata[hour] = counts
+                if hour in hours:
+                  hours.remove(hour)
+                  hdata[hour] = counts
+                else:
+                  errors.append("%s %s %s %s duplicate hour"%(filename, site, date, hour))
         elif evt=="eod":
             if len(hours)==0:
                 for hour, counts in hdata.iteritems():
                     for iday, count in enumerate(counts):
                         yield errors, (filename, site, channel, date, iday, hour, count)
             else:
-                errors.append("incomplete")
+                errors.append("%s %s %s incomplete"%(filename, site, date))
             hdata = {}
 
 def date_vars(dtuple, iday):
@@ -89,3 +93,7 @@ for errors, (filename, site, channel, dtuple, iday, hour, count) in data_lines(e
     print "%s %s %s %s %s %s %s %s %s" % (
       (filename, site, channel) + date_vars(dtuple, iday) + (hour, "NA" if count==None else count))
 
+logfile = open("processed/errors.log", "w")
+for error in errors:
+  print >>logfile, error
+logfile.close()

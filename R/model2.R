@@ -35,7 +35,7 @@ d <- tbl_df(merge(bike.day, weather.df, by="date")) %>%
 
 # FIXME
 # - pakkanen plus sade
-# - juuso: kirjoitusalustasta skypecallin issuet, parserin mahd. ongelmat, plotti
+# - plotti
 
 
 library(mgcv)
@@ -51,9 +51,10 @@ m6 <- gam(count ~ s(yday, k=30, bs="cc") +
           family=nb(link="log"), optimizer="perf", data=d)   
 
 plot(resid(m6), type="l") # V* mitä skeidaa tuolla datassa välillä
-hist(resid(m6) n=1000)
+hist(resid(m6), n=1000)
 
 # bayesilaisessa mallissa voisi olla 'laite paskana' -indikaattori nollille, joita tuolla on paljon.
+# kesäaika?
 
 
 dr <- d %>% mutate(res=resid(m6)) 
@@ -78,4 +79,5 @@ message(paste(rbad$file, collapse=" ")) # for less
 
 # filter by date, site
 # nollacountit pois?
+# 526 pois?
 
