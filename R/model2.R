@@ -47,23 +47,15 @@ d <- tbl_df(merge(bike.day, weather.df, by="date")) %>%
   mutate(snow=ifelse(is.na(snow), 0, snow), main.site=as.factor(main.site), year=as.numeric(substr(date, 1, 4))-2000) %>%
   mutate(holiday = date %in% holidays)
 
-# Note: this is a bit recursive, for the file is written after m6. (FIXME)
-d <- d %>% filter(!(file %in% readRDS("processed/bad_files.rds")))
-
-# FIXME
-# - pakkanen plus sade
-# - plotti
-# - kesäaika?
-# - lagit
-# - 526 ja muut pienet sitet?
-# - lisää interaktioita
-# - vuodenaika-splinin tilalle päivän pituus?
-#   (vuoden voi simuloida)
-# - heinäkuu(n) tienoo
+d <- d %>% mutate(earth.phase=sin(-pi/2+2*pi*((yday+12)%%366)/365))
+#with(d, plot(yday, earth.phase, type="l"))
+lagged.weather <- d %>% select(day, rrday, snow, tday, tmin, tmax) %>% 
+  transmute(day=day+1, rrday1=rrday, snow1=snow, tday1=tday, tmin1=tmin, tmax1=tmax) %>% distinct()
+d <- inner_join(lagged.weather, d, by="day") %>% mutate(dsnow=snow1-snow)
 
 library(mgcv)
 
-m6 <- gam(count ~ #s(yday, k=5, bs="cc") + 
+m6 <- gam(count ~ s(yday, k=30, bs="cc") + 
             s(tday, k=10) + year + holiday +
             rrday + snow + 
             I((snow>0)*rrday) +
@@ -81,23 +73,36 @@ hist(resid(m6), n=1000)
 dr <- d %>% mutate(res=resid(m6)) 
 rbad <- dr %>% filter(res< -4 | res>4) %>% group_by(file) %>%select(file, res) %>% 
   summarise(n=n(), res=mean(res)) 
-rbad %>% filter(n>3)
 bad.files <- rbad$file
 saveRDS(bad.files, "processed/bad_files.rds")
-# Source: local data frame [11 x 3]
-# 
-# file  n       res
-# 1  data/2004_05_toukokuu/12001908.204  5  6.531376
-# 2  data/2004_07_heinakuu/11702320.204 29 -6.180333
-# 3   data/2005_09_syyskuu/11703426.205  4  5.718892
-# 4   data/2006_06_kesakuu/11202318.206  4 -5.651203
-# 5   data/2006_10_lokakuu/10804001.206  5 -5.099787
-# 6  data/2007_07_heinakuu/10202615.207  5 -5.690938
-# 7  data/2008_04_huhtikuu/12101415.208 16  8.861227
-# 8  data/2008_07_heinakuu/10202618.208  5 -5.854549
-# 9  data/2008_07_heinakuu/11202611.208 10 -4.880154
-# 10  data/2008_09_syyskuu/10803614.208 20 -5.709432
-# 11 data/2009_07_heinakuu/10802503.209  5 -5.684332
-message(paste(rbad$file, collapse=" ")) # for less
+if (F) message(paste(rbad$file, collapse=" ")) # for less
 
+d <- d %>% filter(!(file %in% readRDS("processed/bad_files.rds")))
 
+# FIXME
+# - residuaalien korrelaatioita pitäis katsoa
+# - plotti
+# - kesäaika?
+# - 526 ja muut pienet sitet?
+# - lisää interaktioita
+# - heinäkuu(n tienoo)
+# - dtemp?
+
+m7 <- gam(count ~ #s(earth.phase, k=5) + 
+            s(yday, k=10, bs="cc") +
+            s(tmax, tmin, k=10) +
+            year + holiday +
+            rrday + snow + I(pmax(0, dsnow)) + rrday1 + tmin1 + tday1 + tmax1 + 
+            I((tmin<0)*rrday) + 
+            I((snow>0)*rrday) +
+            I(rrday==0)*weekday +
+            I(snow==0)*weekday +
+            s(main.site, bs="re")
+          , 
+          family=nb(link="log"), optimizer="perf", data=d)   
+
+summary(m7)
+plot(m7)
+plot(resid(m7), type="l") 
+plot(qnorm((1:nrow(d))/nrow(d)), sort(resid(m7)), type="l"); abline(0, 1)
+hist(resid(m7), n=1000)
