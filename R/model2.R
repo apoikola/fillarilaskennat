@@ -4,6 +4,7 @@ library("ggplot2")
 #library("tidyr")
 library("gridExtra")
 library("reshape2")
+library(mgcv)
 
 bike.raw <- tbl_df(read.table(file=pipe("python processed/parse.py"), sep=" ", header=T))
 saveRDS(bike.raw, "processed/bike_raw.rds")
@@ -51,31 +52,32 @@ d <- d %>% mutate(earth.phase=sin(-pi/2+2*pi*((yday+12)%%366)/365))
 #with(d, plot(yday, earth.phase, type="l"))
 lagged.weather <- d %>% select(day, rrday, snow, tday, tmin, tmax) %>% 
   transmute(day=day+1, rrday1=rrday, snow1=snow, tday1=tday, tmin1=tmin, tmax1=tmax) %>% distinct()
-d <- inner_join(lagged.weather, d, by="day") %>% mutate(dsnow=snow1-snow)
-
-library(mgcv)
-
-m6 <- gam(count ~ s(yday, k=30, bs="cc") + 
-            s(tday, k=10) + year + holiday +
-            rrday + snow + 
-            I((snow>0)*rrday) +
-            I(rrday==0)*weekday +
-            I(snow==0)*weekday +
-            s(main.site, bs="re")
-          , 
-          family=nb(link="log"), optimizer="perf", data=d)   
-
-plot(resid(m6), type="l") 
-plot(qnorm((1:nrow(d))/nrow(d)), sort(resid(m6)), type="l"); abline(0, 1)
-hist(resid(m6), n=1000)
+d <- inner_join(lagged.weather, d, by="day") %>% mutate(dsnow=snow1-snow, dtemp=tday1-tday)
 
 
-dr <- d %>% mutate(res=resid(m6)) 
-rbad <- dr %>% filter(res< -4 | res>4) %>% group_by(file) %>%select(file, res) %>% 
-  summarise(n=n(), res=mean(res)) 
-bad.files <- rbad$file
-saveRDS(bad.files, "processed/bad_files.rds")
-if (F) message(paste(rbad$file, collapse=" ")) # for less
+if (F) {
+  m6 <- gam(count ~ s(yday, k=30, bs="cc") + 
+              s(tday, k=10) + year + holiday +
+              rrday + snow + 
+              I((snow>0)*rrday) +
+              I(rrday==0)*weekday +
+              I(snow==0)*weekday +
+              s(main.site, bs="re")
+            , 
+            family=nb(link="log"), optimizer="perf", data=d)   
+  
+  plot(resid(m6), type="l") 
+  plot(qnorm((1:nrow(d))/nrow(d)), sort(resid(m6)), type="l"); abline(0, 1)
+  hist(resid(m6), n=1000)
+  
+  
+  dr <- d %>% mutate(res=resid(m6)) 
+  rbad <- dr %>% filter(res< -4 | res>4) %>% group_by(file) %>%select(file, res) %>% 
+    summarise(n=n(), res=mean(res)) 
+  bad.files <- rbad$file
+  saveRDS(bad.files, "processed/bad_files.rds")
+  if (F) message(paste(rbad$file, collapse=" ")) # for less
+}
 
 d <- d %>% filter(!(file %in% readRDS("processed/bad_files.rds")))
 
@@ -86,18 +88,23 @@ d <- d %>% filter(!(file %in% readRDS("processed/bad_files.rds")))
 # - 526 ja muut pienet sitet?
 # - lisää interaktioita
 # - heinäkuu(n tienoo)
-# - dtemp?
+
 
 m7 <- gam(count ~ #s(earth.phase, k=5) + 
             s(yday, k=10, bs="cc") +
-            s(tmax, tmin, k=10) +
+            s(tday, k=10) +  I(tmax-tmin) +
             year + holiday +
-            rrday + snow + I(pmax(0, dsnow)) + rrday1 + tmin1 + tday1 + tmax1 + 
-            I((tmin<0)*rrday) + 
+            rrday + snow + I(pmax(0, dsnow)) + rrday1 + dtemp + 
+            I((tday<0)*rrday) + 
             I((snow>0)*rrday) +
+            I((tday<0)*rrday1) + 
+            I((snow>0)*rrday1) +
             I(rrday==0)*weekday +
-            I(snow==0)*weekday +
-            s(main.site, bs="re")
+            I(snow==0)*weekday +            
+            s(main.site, bs="re") +
+            year:(holiday + weekday + snow + rrday + tday + earth.phase) +
+            earth.phase:(holiday + weekday + dtemp + I(tmax-tmin)) # nää voi jättää poiskin
+          # main.site:vars, mutta re ei onnistu kovin hyvin eli main.site pitää siistiä ensin
           , 
           family=nb(link="log"), optimizer="perf", data=d)   
 
@@ -106,3 +113,4 @@ plot(m7)
 plot(resid(m7), type="l") 
 plot(qnorm((1:nrow(d))/nrow(d)), sort(resid(m7)), type="l"); abline(0, 1)
 hist(resid(m7), n=1000)
+anova(m7)
