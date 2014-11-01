@@ -91,8 +91,8 @@ d <- d %>% filter(!(file %in% readRDS("processed/bad_files.rds")))
 
 
 m7 <- gam(count ~ #s(earth.phase, k=5) + 
-            s(yday, k=10, bs="cc") +
-            s(tday, k=10) +  I(tmax-tmin) +
+            s(earth.phase, k=10) + # alt: s(yday, k=10) +
+            s(tday, k=10) +  s(I(tmax-tmin), k=10) + # alt: tday + I(tmax-tmin) + ; alt2: s(tday, I(tmax-tmin), k=10)
             year + holiday +
             rrday + snow + I(pmax(0, dsnow)) + rrday1 + dtemp + 
             I((tday<0)*rrday) + 
