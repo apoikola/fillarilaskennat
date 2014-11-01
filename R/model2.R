@@ -6,8 +6,21 @@ library("gridExtra")
 library("reshape2")
 
 bike.raw <- tbl_df(read.table(file=pipe("python processed/parse.py"), sep=" ", header=T))
-saveRDS(bike.raw, "bike.raw.rds")
-bike.raw <- readRDS("bike.raw.rds")
+saveRDS(bike.raw, "processed/bike_raw.rds")
+bike.raw <- readRDS("processed/bike_raw.rds")
+
+if (F) {
+  # Mistähän nämä duplikaatit tulevat? (Sama data monessa failissa.)
+  bike.raw %>% select(main.site, date, hour, channel) %>% group_by(main.site, date, hour, channel) %>% 
+    summarise(n=n()) %>% filter(n>1)
+  #Source: local data frame [40,176 x 5]
+  bike.raw %>% select(file, main.site, date, hour, channel) %>% group_by(file, main.site, date, hour, channel) %>% 
+    summarise(n=n()) %>% filter(n>1) %>% ungroup() %>% select(file) %>% distinct()
+  #1   data/2004_08_elokuu/11702620.204
+  #2   data/2005_08_elokuu/11503128.205
+  #3 data/2008_04_huhtikuu/10201418.208
+}
+
 
 load("Finnish_holidays.RData")
 holidays <- c(paste(2000:2020, "-12-23", sep=""), unique(as.character(holidays.df$Date)))
@@ -15,7 +28,9 @@ holidays <- c(paste(2000:2020, "-12-23", sep=""), unique(as.character(holidays.d
 load("fmi_weather/FMI_weather_Helsinki_PROCESSED_2004-01-01_2011-08-31.RData")
 weather.df <- weather.df %>% filter(name=="Helsinki Kaisaniemi") %>% tbl_df()
 
-bike.raw <- bike.raw %>% mutate(main.site=substr(site, 1, 3), sc=paste(site, channel, sep=":")) 
+bike.raw <- bike.raw %>% mutate(main.site=substr(site, 1, 4)) 
+bike.raw <- bike.raw %>% distinct(main.site, date, hour, channel)
+
 
 if (F) { # Check parity
   bike.raw %>%
@@ -32,35 +47,43 @@ d <- tbl_df(merge(bike.day, weather.df, by="date")) %>%
   mutate(snow=ifelse(is.na(snow), 0, snow), main.site=as.factor(main.site), year=as.numeric(substr(date, 1, 4))-2000) %>%
   mutate(holiday = date %in% holidays)
 
+# Note: this is a bit recursive, for the file is written after m6. (FIXME)
+d <- d %>% filter(!(file %in% readRDS("processed/bad_files.rds")))
 
 # FIXME
 # - pakkanen plus sade
 # - plotti
-
+# - kesäaika?
+# - lagit
+# - 526 ja muut pienet sitet?
+# - lisää interaktioita
+# - vuodenaika-splinin tilalle päivän pituus?
+#   (vuoden voi simuloida)
+# - heinäkuu(n) tienoo
 
 library(mgcv)
 
-m6 <- gam(count ~ s(yday, k=30, bs="cc") + 
+m6 <- gam(count ~ #s(yday, k=5, bs="cc") + 
             s(tday, k=10) + year + holiday +
             rrday + snow + 
             I((snow>0)*rrday) +
             I(rrday==0)*weekday +
             I(snow==0)*weekday +
-            s(main.site, bs="re") 
+            s(main.site, bs="re")
           , 
           family=nb(link="log"), optimizer="perf", data=d)   
 
-plot(resid(m6), type="l") # V* mitä skeidaa tuolla datassa välillä
+plot(resid(m6), type="l") 
+plot(qnorm((1:nrow(d))/nrow(d)), sort(resid(m6)), type="l"); abline(0, 1)
 hist(resid(m6), n=1000)
-
-# bayesilaisessa mallissa voisi olla 'laite paskana' -indikaattori nollille, joita tuolla on paljon.
-# kesäaika?
 
 
 dr <- d %>% mutate(res=resid(m6)) 
 rbad <- dr %>% filter(res< -4 | res>4) %>% group_by(file) %>%select(file, res) %>% 
   summarise(n=n(), res=mean(res)) 
 rbad %>% filter(n>3)
+bad.files <- rbad$file
+saveRDS(bad.files, "processed/bad_files.rds")
 # Source: local data frame [11 x 3]
 # 
 # file  n       res
@@ -77,7 +100,4 @@ rbad %>% filter(n>3)
 # 11 data/2009_07_heinakuu/10802503.209  5 -5.684332
 message(paste(rbad$file, collapse=" ")) # for less
 
-# filter by date, site
-# nollacountit pois?
-# 526 pois?
 
