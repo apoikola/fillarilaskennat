@@ -77,7 +77,7 @@ if (F) {
   dr <- d %>% mutate(res=resid(m6)) 
   rbad <- dr %>% filter(res< -4 | res>4) %>% group_by(file) %>%select(file, res) %>% 
     summarise(n=n(), res=mean(res)) 
-  bad.files <- rbad$file
+  bad.files <- as.character(rbad$file)
   saveRDS(bad.files, "processed/bad_files.rds")
   if (F) message(paste(rbad$file, collapse=" ")) # for less
 }
@@ -138,7 +138,11 @@ plot(qnorm((1:nrow(d))/nrow(d)), sort(resid(m7)), type="l"); abline(0, 1)
 hist(resid(m7), n=1000)
 anova(m7)
 
+saveRDS(m7, "processed/m7.rds")
+
 ## PLOT M7 WITH GGPLOT2 ########
+
+m7 <- readRDS("processed/m7.rds")
 
 # Custom colour theme
 # install.packages("ggthemes")
