@@ -123,7 +123,10 @@ m7 <- gam(count ~ #s(earth.phase, k=5) +
             I(snow!=0)*weekday + # AnySnow is more intuitive than NoSnow
             s(main.site, bs="re") +
             year:(holiday + weekday + snow + rrday + tday + earth.phase) +
-            earth.phase:(holiday + weekday + dtemp + I(tmax-tmin)) # nää voi jättää poiskin
+            earth.phase:(holiday + weekday + dtemp + I(tmax-tmin)) + # nää voi jättää poiskin
+            main.site:(holiday + dtemp + I(tmax-tmin) + year) +
+            s(main.site, earth.phase, bs="re") +
+            s(main.site, weekday, bs="re") 
           # main.site:vars, mutta re ei onnistu kovin hyvin eli main.site pitää siistiä ensin
           , 
           family=nb(link="log"), optimizer="perf", data=d)   
