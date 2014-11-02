@@ -121,7 +121,7 @@ m7 <- gam(count ~ #s(earth.phase, k=5) +
             I((snow>0)*rrday1) +
             I(rrday!=0)*weekday + # AnyRain is more intuitive than NoRain
             I(snow!=0)*weekday + # AnySnow is more intuitive than NoSnow
-            s(main.site, bs="re") +
+            main.site + #s(main.site, bs="re") +
             year:(holiday + weekday + snow + rrday + tday + earth.phase) +
             earth.phase:(holiday + weekday + dtemp + I(tmax-tmin)) + # nää voi jättää poiskin
             main.site:(holiday + dtemp + I(tmax-tmin) + year) +
@@ -175,6 +175,10 @@ levels(d$main.site.named) <- paste(levels(d$main.site.named), main.site.names[le
 # Construct intuitive y scale
 percent.vals <- c(25, 33, 50, 67, 100, 150, 200, 300)
 y.vals <- log(percent.vals/100)
+# percent.vals2 <- c(25, 50, 100, 200)
+# y.vals2 <- log(percent.vals2/100)
+percent.vals3 <- c(50, 67, 80, 100, 125, 150, 200)
+y.vals3 <- log(percent.vals3/100)
 
 # Plot raw data and predicted model
 d$predCount <- exp(predict.gam(model, d))
@@ -192,8 +196,6 @@ p.rp <- ggplot(d2, aes(x=date, y=Count, colour=variable)) +
 # - remove lines over missing values
 
 # Plot residuals
-# percent.vals2 <- c(25, 50, 100, 200)
-# y.vals2 <- log(percent.vals2/100)
 resid.df <- data.frame(d, residuals=model$residuals)
 resid.df$date <- as.Date(resid.df$date)
 p.resid <- ggplot(resid.df, aes(x=date, y=residuals)) + 
@@ -201,18 +203,18 @@ p.resid <- ggplot(resid.df, aes(x=date, y=residuals)) +
   facet_grid(main.site.named ~ .) +
   ggtitle("Residuals left") + 
   ylab("Effect on log_e scale") +
-#  scale_y_continuous(breaks=y.vals2, labels=percent.vals2) +
   theme(strip.text.y=element_text(angle=0))
 
 p.data <- arrangeGrob(p.rp, p.resid, ncol=1)
-ggsave(plot=p.data, file="figures/Fillari_M7_data_v2.png", width=8, height=15)
+ggsave(plot=p.data, file="figures/Fillari_M7_data_v3.png", width=8, height=15)
 
 # List biggest residuals
-write.csv(head(resid.df[order(abs(resid.df$residuals), decreasing = T), ], 100), file="M7_residuals_v1.csv")
+write.csv(head(resid.df[order(abs(resid.df$residuals), decreasing = T), ], 100), file="M7_residuals_v3.csv")
 
-# Remove site effect from smooth plots
+## Plot continuous smooths
+# Remove categorical variables from smooth plots
 model2 <- model
-model2$smooth <- model2$smooth[-4]
+model2$smooth <- model2$smooth[sapply(model2$smooth, length)==23]
 smooths <- EvaluateSmooths(model2)
 # Desribe variables better
 levels(smooths$x.var) <- paste(levels(smooths$x.var), c("(proxy for day length)", "(mean temperature for day)", "(proxy for cloudyness)"), sep="\n")
@@ -224,17 +226,61 @@ p.smooth <- ggplot(smooths, aes(x=x.val, y=value)) + geom_line() +
   facet_grid(. ~ x.var, scales="free_x") +
   labs(y="Effect (%)")
 
+# ## Plot main site effects - NOT HERE ANYMORE
+# site.inds <- model$smooth[[4]]$first.para:model$smooth[[4]]$last.para
+# site.coefs <- model$coefficients[site.inds]
+# site.ses <- summary(model)$se[site.inds]
+# site.df <- data.frame(Site=main.site.names, Effect=site.coefs, SE=site.ses)
+# site.df$Site <- factor(site.df$Site, levels=site.df$Site[order(site.df$Effect)])
+# p.site <- ggplot(site.df, aes(x=Site, y=Effect, ymin=Effect-SE, ymax=Effect+SE)) + 
+#   geom_point(size=3) + 
+#   geom_errorbar(width=0) + 
+#   ggtitle("Site effects") + 
+#   labs(x=NULL, y="Effect (%)") +
+#   scale_y_continuous(breaks=y.vals3, labels=percent.vals3) +
+#   geom_hline(y=0, linetype="dashed") +
+#   coord_flip()
+# # Flat => no need to show
 
-# Plot scalar coefficients and standard errors
-percent.vals3 <- c(50, 67, 80, 100, 125, 150, 200)
-y.vals3 <- log(percent.vals3/100)
+## Plot main.site:earth.phase effects - 
+site.ep.inds <- model$smooth[[4]]$first.para:model$smooth[[4]]$last.para
+site.ep.coefs <- model$coefficients[site.ep.inds]
+site.ep.ses <- summary(model)$se[site.ep.inds]
+site.ep.df <- data.frame(Site=main.site.names, Effect=site.ep.coefs, SE=site.ep.ses)
+site.ep.df$Site <- factor(site.ep.df$Site, levels=site.ep.df$Site[order(site.ep.df$Effect)])
+p.site.ep <- ggplot(site.ep.df, aes(x=Site, y=Effect, ymin=Effect-SE, ymax=Effect+SE)) + 
+  geom_point(size=3) + 
+  geom_errorbar(width=0) + 
+  ggtitle("Site-earth phase interaction effects") + 
+  labs(x=NULL, y="Effect (%)") +
+  scale_y_continuous(breaks=y.vals3, labels=percent.vals3) +
+  geom_hline(y=0, linetype="dashed") +
+  coord_flip()
+
+# ## Plot main.site:weekday effects - NOT NOW
+# site.inds <- model$smooth[[5]]$first.para:model$smooth[[5]]$last.para
+# site.coefs <- model$coefficients[site.inds]
+# site.ses <- summary(model)$se[site.inds]
+# site.df <- data.frame(Site=main.site.names, Effect=site.coefs, SE=site.ses)
+# site.df$Site <- factor(site.df$Site, levels=site.df$Site[order(site.df$Effect)])
+# p.site <- ggplot(site.df, aes(x=Site, y=Effect, ymin=Effect-SE, ymax=Effect+SE)) + 
+#   geom_point(size=3) + 
+#   geom_errorbar(width=0) + 
+#   ggtitle("Site effects") + 
+#   labs(x=NULL, y="Effect (%)") +
+#   scale_y_continuous(breaks=y.vals3, labels=percent.vals3) +
+#   geom_hline(y=0, linetype="dashed") +
+#   coord_flip()
+
+
+## Plot scalar coefficients and standard errors
 smooth.param.inds <- unlist(lapply(model$smooth, function(x) x$first.para:x$last.para))
 coefs <- model$coefficients[-smooth.param.inds]
 ses <- summary(model)$se[-smooth.param.inds]
 names(coefs) <- gsub("I\\(rrday != 0\\)TRUE", "AnyRain", names(coefs))
 names(coefs) <- gsub("I\\(snow != 0\\)TRUE", "AnySnow", names(coefs))
 
-# Extract weekday stuff
+## Extract and plot weekday stuff
 coefs.weekdays <- coefs[grep("weekday", names(coefs))]
 ses.weekdays <- ses[grep("weekday", names(coefs))]
 names(coefs.weekdays) <- gsub("weekday", "", names(coefs.weekdays))
@@ -244,27 +290,59 @@ stopifnot(all(sapply(temp, length) <=2))
 temp[sapply(temp, length)==1] <- lapply(temp[sapply(temp, length)==1], c, "baseline")
 # Reorder
 temp[!(sapply(temp, "[", 1) %in% weekdays)] <- lapply(temp[!(sapply(temp, "[", 1) %in% weekdays)], function(x) x[2:1])
-# Process into data frame
 cw.df <- data.frame(Weekday=sapply(temp, "[", 1), Factor=sapply(temp, "[", 2), Coefficient=coefs.weekdays, row.names=NULL, SE=ses.weekdays)
-cw.df$Weekday <- factor(cw.df$Weekday, levels=weekdays)
-cw.df$INDEX <- 1:nrow(cw.df)
+# Add Friday as zeros
+cw.df <- rbind(cw.df, data.frame(Weekday="Friday", Factor=levels(cw.df$Factor), Coefficient=0, SE=0))
+cw.df$Weekday <- factor(cw.df$Weekday, levels=rev(weekdays))
 p.cw <- ggplot(cw.df, aes(x=Factor, y=Coefficient, ymin=Coefficient-SE, ymax=Coefficient+SE, colour=Weekday)) + 
   geom_point(size=3, position=position_dodge(width=0.4)) + 
   geom_errorbar(width=0, position=position_dodge(width=0.4)) + 
   geom_hline(y=0, linetype="dashed") +
   scale_y_continuous(breaks=y.vals3, labels=percent.vals3) +  
   labs(x=NULL, y="Effect (%)") +
-  ggtitle("Effects of weekdays\n(Friday is the baseline)") +
+  ggtitle("Weekday interactions\n(Friday is the baseline)") +
   coord_flip() + 
   guides(colour = guide_legend(reverse=TRUE))
-# + facet_wrap(~ Weekday, nrow=1) + theme(axis.text.x=element_text(angle=60, hjust=1)) 
+
+## Extract and plot remaining main.site interaction effects
+coefs.sites <- coefs[grep("main.site", names(coefs))]
+ses.sites <- ses[grep("main.site", names(ses))]
+temp <- strsplit(names(coefs.sites), split=":")
+stopifnot(all(sapply(temp, length) <=2))
+temp[sapply(temp, length)==1] <- lapply(temp[sapply(temp, length)==1], function(x) c("baseline", x))
+# Reorder
+wrong.order.inds <- grep("main.site", sapply(temp, "[", 1))
+temp[-wrong.order.inds] <- lapply(temp[-wrong.order.inds], function(x) x[2:1])
+
+cms.df <- data.frame(main.site=sapply(temp, "[", 1), Factor=sapply(temp, "[", 2), Coefficient=coefs.sites, row.names=NULL, SE=ses.sites)
+cms.df$main.site.named <- main.site.names[substr(cms.df$main.site, 10, 14)]
+# Add Kuusisaarensilta as zeros
+cms.df <- rbind(cms.df, data.frame(main.site="x", Factor=levels(cms.df$Factor), Coefficient=0, SE=0, main.site.named="Kuusisaarensilta"))
+# Add site.main:earth.phase from smooth
+cms.df <- rbind(cms.df, data.frame(main.site="x", Factor="earth.phase", Coefficient=site.ep.df$Effect, SE=site.ep.df$SE, main.site.named=site.ep.df$Site))
 
 
-# Extract the rest
-coefs.other <- coefs[-grep("weekday", names(coefs))]
-ses.other <- ses[-grep("weekday", names(coefs))]
+# Remove Veräjämäki
+cms.df <- droplevels(subset(cms.df, main.site.named != "Veräjämäki"))
+# Reorder
+temp <- subset(cms.df, Factor=="baseline")
+cms.df$main.site.named <- factor(cms.df$main.site.named, levels=temp$main.site.named[order(temp$Coefficient)])
+p.cms <- ggplot(cms.df, aes(x=Factor, y=Coefficient, ymin=Coefficient-SE, ymax=Coefficient+SE, colour=main.site.named)) + 
+  geom_point(size=3, position=position_dodge(width=0.4)) + 
+  geom_errorbar(width=0, position=position_dodge(width=0.4)) + 
+  geom_hline(y=0, linetype="dashed") +
+  scale_y_continuous(breaks=y.vals3, labels=percent.vals3) +  
+  labs(x=NULL, y="Effect (%)") +
+  ggtitle("Main site interactions\n(Kuusisaarensilta is the baseline)") +
+  coord_flip() + 
+  guides(colour = guide_legend(reverse=TRUE))
 
-# Extract the main effects
+
+# Extract the rest of the coefficients
+coefs.other <- coefs[-c(grep("weekday", names(coefs)), grep("main.site", names(coefs)))]
+ses.other <- ses[-c(grep("weekday", names(coefs)), grep("main.site", names(coefs)))]
+
+# Extract and plot remaining main effects
 coefs.main <- coefs.other[-c(grep(":", names(coefs.other)), grep("\\*", names(coefs.other)))]
 ses.main <- ses.other[names(coefs.main)]
 # Remove Intercept for now (how to interpret?)
@@ -281,7 +359,7 @@ p.cm <- ggplot(cm.df, aes(x=Factor, y=Coefficient, ymin=Coefficient-SE, ymax=Coe
   geom_hline(y=0, linetype="dashed") +
   coord_flip()
 
-# Extract the interaction effects
+# Extract and plot remaining interaction effects
 coefs.interaction <- coefs.other[c(grep(":", names(coefs.other)), grep("\\*", names(coefs.other)))]
 ses.interaction <- ses.other[names(coefs.interaction)]
 ci.df <- data.frame(Factor=names(coefs.interaction), Coefficient=coefs.interaction, SE=ses.interaction)
@@ -295,24 +373,13 @@ p.ci <- ggplot(ci.df, aes(x=Factor, y=Coefficient, ymin=Coefficient-SE, ymax=Coe
   geom_hline(y=0, linetype="dashed") +
   coord_flip()
 
-# Plot main site effects
-site.inds <- model$smooth[[4]]$first.para:model$smooth[[4]]$last.para
-site.coefs <- model$coefficients[site.inds]
-site.ses <- summary(model)$se[site.inds]
-site.df <- data.frame(Site=main.site.names, Effect=site.coefs, SE=site.ses)
-site.df$Site <- factor(site.df$Site, levels=site.df$Site[order(site.df$Effect)])
-p.site <- ggplot(site.df, aes(x=Site, y=Effect, ymin=Effect-SE, ymax=Effect+SE)) + 
-  geom_point(size=3) + 
-  geom_errorbar(width=0) + 
-  ggtitle("Site effects") + 
-  labs(x=NULL, y="Effect (%)") +
-  scale_y_continuous(breaks=y.vals3, labels=percent.vals3) +
-  geom_hline(y=0, linetype="dashed") +
-  coord_flip()
-  
-# Put together
-p.f1 <- arrangeGrob(p.site, p.smooth, nrow=1, widths=c(1.5, 3))
-p.f2 <- arrangeGrob(arrangeGrob(p.cm, p.ci, ncol=1), p.cw, nrow=1)
-p.fillari <- arrangeGrob(p.f1, p.f2, ncol=1, heights=c(1.2, 2))
-ggsave(plot=p.fillari, file="figures/Fillari_M7_model_v2.png", width=12, height=10)
+
+  # Put together
+# p.f1 <- arrangeGrob(p.site, p.smooth, nrow=1, widths=c(1.5, 3))
+# p.f2 <- arrangeGrob(arrangeGrob(p.cm, p.ci, ncol=1), p.cw, nrow=1)
+# p.fillari <- arrangeGrob(p.f1, p.f2, ncol=1, heights=c(1.2, 2))
+p.f1 <- arrangeGrob(p.cm, p.ci, nrow=1)
+p.f2 <- arrangeGrob(p.cms, p.cw, nrow=1)
+p.fillari <- arrangeGrob(p.smooth, p.f1, p.f2, ncol=1, heights=c(1, 1, 2))
+ggsave(plot=p.fillari, file="figures/Fillari_M7_model_v3.png", width=12, height=15)
 
