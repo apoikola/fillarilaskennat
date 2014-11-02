@@ -101,19 +101,26 @@ d <- droplevels(filter(d, !(main.site %in% c("1223", "1218", "1222", "1202", "11
 ## Add july and near july
 july.days <- c(paste("07-0", 1:9, sep=""), paste("07", 10:31, sep="-"))
 july.dates <- paste(rep(2000:2020, each=length(july.days)), july.days, sep="-")
-d <- mutate(d, july=date %in% july.dates)
+near.july.days <- c(paste("06", 23:30, sep="-"), paste("08-0", 1:9, sep=""), paste("08-", 10:14, sep=""))
+near.july.dates <- paste(rep(2000:2020, each=length(near.july.days)), near.july.days, sep="-")
+june.days <- c(paste("06-0", 1:9, sep=""), paste("06", 10:30, sep="-"))
+june.dates <- paste(rep(2000:2020, each=length(june.days)), june.days, sep="-")
+aug.days <- c(paste("08-0", 1:9, sep=""), paste("08", 10:31, sep="-"))
+aug.dates <- paste(rep(2000:2020, each=length(aug.days)), aug.days, sep="-")
+
+d <- mutate(d, july=date %in% july.dates, near.july=date %in% near.july.dates) #june=date%in%june.dates, aug=date%in%aug.dates
 
 m7 <- gam(count ~ #s(earth.phase, k=5) + 
             s(earth.phase, k=10) + # alt: s(yday, k=10) +
             s(tday, k=10) +  s(I(tmax-tmin), k=10) + # alt: tday + I(tmax-tmin) + ; alt2: s(tday, I(tmax-tmin), k=10)
-            year + holiday + july + 
+            year + holiday + july + near.july +
             rrday + snow + I(pmax(0, dsnow)) + rrday1 + dtemp + 
             I((tday<0)*rrday) + 
             I((snow>0)*rrday) +
             I((tday<0)*rrday1) + 
             I((snow>0)*rrday1) +
-            I(rrday==0)*weekday +
-            I(snow==0)*weekday +            
+            I(rrday!=0)*weekday + # AnyRain is more intuitive than NoRain
+            I(snow!=0)*weekday + # AnySnow is more intuitive than NoSnow
             s(main.site, bs="re") +
             year:(holiday + weekday + snow + rrday + tday + earth.phase) +
             earth.phase:(holiday + weekday + dtemp + I(tmax-tmin)) # nää voi jättää poiskin
@@ -131,7 +138,7 @@ anova(m7)
 ## PLOT M7 WITH GGPLOT2 ########
 
 # Custom colour theme
-install.packages("ggthemes")
+# install.packages("ggthemes")
 library("ggthemes")
 theme_set(theme_bw(base_size = 16))
 # theme_set(theme_solarized(light=FALSE))
@@ -191,8 +198,10 @@ p.resid <- ggplot(resid.df, aes(x=date, y=residuals)) +
   theme(strip.text.y=element_text(angle=0))
 
 p.data <- arrangeGrob(p.rp, p.resid, ncol=1)
-ggsave(plot=p.data, file="figures/Fillari_M7_data_v1.png", width=8, height=15)
+ggsave(plot=p.data, file="figures/Fillari_M7_data_v2.png", width=8, height=15)
 
+# List biggest residuals
+write.csv(head(resid.df[order(abs(resid.df$residuals), decreasing = T), ], 100), file="M7_residuals_v1.csv")
 
 # Remove site effect from smooth plots
 model2 <- model
@@ -210,11 +219,13 @@ p.smooth <- ggplot(smooths, aes(x=x.val, y=value)) + geom_line() +
 
 
 # Plot scalar coefficients and standard errors
+percent.vals3 <- c(50, 67, 80, 100, 125, 150, 200)
+y.vals3 <- log(percent.vals3/100)
 smooth.param.inds <- unlist(lapply(model$smooth, function(x) x$first.para:x$last.para))
 coefs <- model$coefficients[-smooth.param.inds]
 ses <- summary(model)$se[-smooth.param.inds]
-names(coefs) <- gsub("I\\(rrday == 0\\)TRUE", "NoRain", names(coefs))
-names(coefs) <- gsub("I\\(snow == 0\\)TRUE", "NoSnow", names(coefs))
+names(coefs) <- gsub("I\\(rrday != 0\\)TRUE", "AnyRain", names(coefs))
+names(coefs) <- gsub("I\\(snow != 0\\)TRUE", "AnySnow", names(coefs))
 
 # Extract weekday stuff
 coefs.weekdays <- coefs[grep("weekday", names(coefs))]
@@ -231,31 +242,49 @@ cw.df <- data.frame(Weekday=sapply(temp, "[", 1), Factor=sapply(temp, "[", 2), C
 cw.df$Weekday <- factor(cw.df$Weekday, levels=weekdays)
 cw.df$INDEX <- 1:nrow(cw.df)
 p.cw <- ggplot(cw.df, aes(x=Factor, y=Coefficient, ymin=Coefficient-SE, ymax=Coefficient+SE, colour=Weekday)) + 
-#  geom_bar(stat="identity", position="dodge") + 
   geom_point(size=3, position=position_dodge(width=0.4)) + 
   geom_errorbar(width=0, position=position_dodge(width=0.4)) + 
   geom_hline(y=0, linetype="dashed") +
-  scale_y_continuous(breaks=y.vals, labels=percent.vals) +  
+  scale_y_continuous(breaks=y.vals3, labels=percent.vals3) +  
   labs(x=NULL, y="Effect (%)") +
-  ggtitle("Effects of weekdays (Friday is the baseline)") +
+  ggtitle("Effects of weekdays\n(Friday is the baseline)") +
   coord_flip() + 
   guides(colour = guide_legend(reverse=TRUE))
 # + facet_wrap(~ Weekday, nrow=1) + theme(axis.text.x=element_text(angle=60, hjust=1)) 
 
+
 # Extract the rest
 coefs.other <- coefs[-grep("weekday", names(coefs))]
 ses.other <- ses[-grep("weekday", names(coefs))]
+
+# Extract the main effects
+coefs.main <- coefs.other[-c(grep(":", names(coefs.other)), grep("\\*", names(coefs.other)))]
+ses.main <- ses.other[names(coefs.main)]
 # Remove Intercept for now (how to interpret?)
-coefs.other <- coefs.other[-grep("Intercept", names(coefs.other))]
-ses.other <- ses.other[-grep("Intercept", names(ses.other))]
-co.df <- data.frame(Factor=names(coefs.other), Coefficient=coefs.other, SE=ses.other)
-p.co <- ggplot(co.df, aes(x=Factor, y=Coefficient, ymin=Coefficient-SE, ymax=Coefficient+SE)) + 
-#  geom_bar(stat="identity") +
+coefs.main <- coefs.main[-grep("Intercept", names(coefs.main))]
+ses.main <- ses.main[-grep("Intercept", names(ses.main))]
+cm.df <- data.frame(Factor=names(coefs.main), Coefficient=coefs.main, SE=ses.main)
+cm.df$Factor <- factor(cm.df$Factor, levels=cm.df$Factor[order(cm.df$Coefficient)])
+p.cm <- ggplot(cm.df, aes(x=Factor, y=Coefficient, ymin=Coefficient-SE, ymax=Coefficient+SE)) + 
   geom_point(size=3) + 
   geom_errorbar(width=0) + 
-  ggtitle("Other effects") + 
+  ggtitle("Main effects") + 
   labs(x=NULL, y="Effect (%)") +
-  scale_y_continuous(breaks=y.vals, labels=percent.vals) +
+  scale_y_continuous(breaks=y.vals3, labels=percent.vals3) +
+  geom_hline(y=0, linetype="dashed") +
+  coord_flip()
+
+# Extract the interaction effects
+coefs.interaction <- coefs.other[c(grep(":", names(coefs.other)), grep("\\*", names(coefs.other)))]
+ses.interaction <- ses.other[names(coefs.interaction)]
+ci.df <- data.frame(Factor=names(coefs.interaction), Coefficient=coefs.interaction, SE=ses.interaction)
+ci.df$Factor <- factor(ci.df$Factor, levels=ci.df$Factor[order(ci.df$Coefficient)])
+p.ci <- ggplot(ci.df, aes(x=Factor, y=Coefficient, ymin=Coefficient-SE, ymax=Coefficient+SE)) + 
+  geom_point(size=3) + 
+  geom_errorbar(width=0) + 
+  ggtitle("Interaction effects") + 
+  labs(x=NULL, y="Effect (%)") +
+  scale_y_continuous(breaks=y.vals3, labels=percent.vals3) +
   geom_hline(y=0, linetype="dashed") +
   coord_flip()
 
@@ -270,15 +299,13 @@ p.site <- ggplot(site.df, aes(x=Site, y=Effect, ymin=Effect-SE, ymax=Effect+SE))
   geom_errorbar(width=0) + 
   ggtitle("Site effects") + 
   labs(x=NULL, y="Effect (%)") +
-  scale_y_continuous(breaks=y.vals, labels=percent.vals) +
+  scale_y_continuous(breaks=y.vals3, labels=percent.vals3) +
   geom_hline(y=0, linetype="dashed") +
   coord_flip()
   
 # Put together
 p.f1 <- arrangeGrob(p.site, p.smooth, nrow=1, widths=c(1.5, 3))
-p.f2 <- arrangeGrob(p.cw, p.co, nrow=1)
+p.f2 <- arrangeGrob(arrangeGrob(p.cm, p.ci, ncol=1), p.cw, nrow=1)
 p.fillari <- arrangeGrob(p.f1, p.f2, ncol=1, heights=c(1.2, 2))
-ggsave(plot=p.fillari, file="figures/Fillari_M7_model_v1.png", width=12, height=10)
-
-
+ggsave(plot=p.fillari, file="figures/Fillari_M7_model_v2.png", width=12, height=10)
 
