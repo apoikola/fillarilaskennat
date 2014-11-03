@@ -121,7 +121,7 @@ m7 <- gam(count ~ #s(earth.phase, k=5) +
             I((snow>0)*rrday1) +
             I(rrday!=0)*weekday + # AnyRain is more intuitive than NoRain
             I(snow!=0)*weekday + # AnySnow is more intuitive than NoSnow
-            s(main.site, bs="re") +
+            main.site +
             year:(holiday + weekday + snow + rrday + tday + earth.phase) +
             earth.phase:(holiday + weekday + dtemp + I(tmax-tmin)) + # nää voi jättää poiskin
             main.site:(holiday + dtemp + I(tmax-tmin) + year) +
