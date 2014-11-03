@@ -5,6 +5,7 @@ library("ggplot2")
 library("gridExtra")
 library("reshape2")
 library("mgcv")
+library("scales")
 
 bike.raw <- tbl_df(read.table(file=pipe("python processed/parse.py"), sep=" ", header=T))
 saveRDS(bike.raw, "processed/bike_raw.rds")
@@ -41,7 +42,7 @@ if (F) { # Check parity
     filter(count<150) %>%  mutate(parity=count %%2) %>% group_by(main.site, parity) %>% summarise(n=n()) %>% 
     dcast(main.site ~ parity)
 }
-  
+
 # Leave site, channel
 bike.day <- bike.raw %>% group_by(file, main.site, date, day, weekday, yday) %>% 
   summarise(count=sum(count)) %>% filter(!is.na(count)) %>% ungroup()
@@ -158,17 +159,17 @@ model <- m7
 
 # Use real main.site names
 main.site.names <- c(
-"1020"="Kuusisaarensilta",
-"1030"="Kulosaarensilta",
-"1070"="Eläintarhanlahti",
-"1080"="Hesperian puisto",
-"1120"="Veräjämäki",
-"1150"="Eteläesplanadi",
-"1160"="Kantelettarentie",
-"1170"="Lauttasaaren silta",
-"1180"="Kehä I, Vantaajoki",
-"1200"="Nordenskiöldinpolku",
-"1210"="Tuntematon"
+  "1020"="Kuusisaarensilta",
+  "1030"="Kulosaarensilta",
+  "1070"="Eläintarhanlahti",
+  "1080"="Hesperian puisto",
+  "1120"="Veräjämäki",
+  "1150"="Eteläesplanadi",
+  "1160"="Kantelettarentie",
+  "1170"="Lauttasaaren silta",
+  "1180"="Kehä I, Vantaajoki",
+  "1200"="Nordenskiöldinpolku",
+  "1210"="Tuntematon"
 )
 d$main.site.named <- d$main.site
 levels(d$main.site.named) <- paste(levels(d$main.site.named), main.site.names[levels(d$main.site.named)], sep="\n")
@@ -374,7 +375,7 @@ p.ci <- ggplot(ci.df, aes(x=Factor, y=Coefficient, ymin=Coefficient-SE, ymax=Coe
   coord_flip()
 
 
-  # Put together
+# Put together
 # p.f1 <- arrangeGrob(p.site, p.smooth, nrow=1, widths=c(1.5, 3))
 # p.f2 <- arrangeGrob(arrangeGrob(p.cm, p.ci, ncol=1), p.cw, nrow=1)
 # p.fillari <- arrangeGrob(p.f1, p.f2, ncol=1, heights=c(1.2, 2))
@@ -442,3 +443,109 @@ p.weekday <- ggplot(weekday.df, aes(x=Factor, y=Coefficient, ymin=Coefficient-SE
 p.a4f1 <- arrangeGrob(p.temperature, p.main, p.mainsite, p.weekday, ncol=1)
 ggsave(plot=p.a4f1, file="figures/Fillari_M7_model_A4F_v1.png", width=8, height=16)
 
+## PLOTS FOR A4F IN FINNISH ########
+
+
+# ADD DATA + MODEL FIGURE IN FINNISH!
+# Temperature
+tday.df <- droplevels(subset(smooths, x.var == "tday\n(mean temperature for day)"))
+p.temperature <- ggplot(tday.df, aes(x=x.val, y=value)) + geom_line() + 
+  geom_line(aes(y=value + 2*se), linetype="dashed") + 
+  geom_line(aes(y=value - 2*se), linetype="dashed") +
+  scale_y_continuous(breaks=y.vals, labels=percent.vals, limits=range(smooths$value)) +
+  geom_hline(y=0, linetype="dashed") + 
+  labs(x="Lämpötila", y="Vaikutus (%)")
+ggsave(plot=p.temperature, file="a4f_figures/a4f_lampotila_v1.png", width=4, height=4)
+
+p.temperature2 <- ggplot(tday.df, aes(x=x.val, y=value, colour=x.val)) + 
+  geom_line(size=1.5) + 
+  geom_line(aes(y=value + 2*se)) + #, linetype="dashed") + 
+  geom_line(aes(y=value - 2*se)) +#, linetype="dashed") +
+  scale_colour_gradient2(low=muted("blue"), mid="gray", high=muted("red")) + 
+  scale_y_continuous(breaks=y.vals, labels=percent.vals, limits=range(smooths$value)) +
+  geom_hline(y=0, linetype="dashed") + 
+  labs(x="Lämpötila", y="Vaikutus (%) ± keskivirhe") +
+  theme(legend.position="none") + 
+  ggtitle("Lämpötilan vaikutus")
+ggsave(plot=p.temperature2, file="a4f_figures/a4f_lampotila_vari_v1.png", width=4, height=4)
+
+# Main effects
+percent.vals4 <- c(67, 80, 90, 100, 110, 125)
+y.vals4 <- log(percent.vals4/100)
+main.df <- cm.df
+# remove dtemp
+main.df <- droplevels(subset(main.df, Factor!="dtemp"))
+factors.10 <- c("year", "rrday", "snow", "rrday1", "I(pmax(0, dsnow))")
+main.df[main.df$Factor %in% factors.10, "Coefficient"] <- 10*main.df[main.df$Factor %in% factors.10, "Coefficient"]
+main.df[main.df$Factor %in% factors.10, "SE"] <- 10*main.df[main.df$Factor %in% factors.10, "SE"]
+levels(main.df$Factor)[levels(main.df$Factor) %in% factors.10] <- paste0(levels(main.df$Factor)[levels(main.df$Factor) %in% factors.10], "_10")
+levels(main.df$Factor) <- c("heinäkuu (kyllä/ei)", "lunta maassa (kyllä/ei)", 
+                            "juhlapyhä (kyllä/ei)", "kesäkuun loppu ja\nelokuun alku (kyllä/ei)",
+                            "sataa (kyllä/ei)", "lumen määrä (10cm)", "uuden lumen määrä (10cm)", 
+                            "sateen määrä (10mm)",
+                            "eilinen sateen määrä (10mm)", "aika (10 vuotta)")
+main.df$Factor <- factor(main.df$Factor, levels=main.df$Factor[order(main.df$Coefficient)])
+p.main <- ggplot(main.df, aes(x=Factor, y=Coefficient, ymin=Coefficient-SE, ymax=Coefficient+SE)) + 
+  geom_point(size=3) + 
+  geom_errorbar(width=0) + 
+  ggtitle("Suorat vaikutukset") + 
+  labs(x=NULL, y="Vaikutus (%)") +
+  scale_y_continuous(breaks=y.vals4, labels=percent.vals4) +
+  geom_hline(y=0, linetype="dashed") +
+  coord_flip()
+ggsave(plot=p.main, file="a4f_figures/a4f_suorat_v1.png", width=6, height=6)
+
+
+
+# Main site
+# show baseline, holidayTRUE, year
+site.df <- droplevels(subset(cms.df, Factor %in% c("baseline", "year", "holidayTRUE")))
+site.df[site.df$Factor=="year", "Coefficient"] <- 10*site.df[site.df$Factor=="year", "Coefficient"]
+site.df[site.df$Factor=="year", "SE"] <- 10*site.df[site.df$Factor=="year", "SE"]
+levels(site.df$Factor)[3] <- "years_10"
+levels(site.df$Factor) <- c("lähtötaso", "juhlapyhä (kyllä/ei)", "aika (10 vuotta)")
+site.df$Factor <- factor(site.df$Factor, levels=c("juhlapyhä (kyllä/ei)", "aika (10 vuotta)", "lähtötaso"))
+p.mainsite <- ggplot(site.df, aes(x=Factor, y=Coefficient, ymin=Coefficient-SE, ymax=Coefficient+SE, colour=main.site.named)) + 
+  geom_point(size=3, position=position_dodge(width=0.7)) + 
+  geom_errorbar(width=0, position=position_dodge(width=0.7)) + 
+  geom_hline(y=0, linetype="dashed") +
+  scale_y_continuous(breaks=y.vals3, labels=percent.vals3) +  
+  labs(x=NULL, y="Vaikutus (%)", colour="sijainti") +
+  ggtitle("Sijainnin vaikutukset") +
+  coord_flip() + 
+  guides(colour = guide_legend(reverse=TRUE))
+ggsave(plot=p.mainsite, file="a4f_figures/a4f_sijainti_v1.png", width=8, height=6)
+
+
+# Weekday
+# show baseline, AnyRain, AnySnow, 
+weekday.df <- droplevels(subset(cw.df, Factor %in% c("baseline", "AnyRain", "AnySnow")))
+levels(weekday.df$Weekday) <- c("sunnuntai", "lauantai", "perjantai", "torstai", 
+                                "keskiviikko", "tiistai", "maanantai")
+levels(weekday.df$Factor) <- c("sataa (kyllä/ei)", "lunta maassa (kyllä/ei)", "lähtötaso")
+p.weekday <- ggplot(weekday.df, aes(x=Factor, y=Coefficient, ymin=Coefficient-SE, ymax=Coefficient+SE, colour=Weekday)) + 
+  geom_point(size=3, position=position_dodge(width=0.7)) + 
+  geom_errorbar(width=0, position=position_dodge(width=0.7)) + 
+  geom_hline(y=0, linetype="dashed") +
+  scale_y_continuous(breaks=y.vals3, labels=percent.vals3) +  
+  labs(x=NULL, y="Vaikutus (%)", colour="viikonpäivä") +
+  ggtitle("Viikonpäivien vaikutukset") +
+  coord_flip() + 
+  guides(colour = guide_legend(reverse=TRUE))
+ggsave(plot=p.weekday, file="a4f_figures/a4f_viikonpäivät_v1.png", width=8, height=6)
+
+# Plot example data + model
+d2.subset <- droplevels(subset(d2, main.site.named=="1070\nEläintarhanlahti" & year %in% 2009:2010))
+levels(d2.subset$variable) <- c("raakadata", "mallin ennuste")
+p.data <- ggplot(d2.subset, aes(x=date, y=Count, colour=variable)) + 
+  geom_line(alpha=0.8) + 
+  scale_y_log10() + 
+  ggtitle("Esimerkki datasta: Eläintarhanlahti") +
+  labs(x="päivämäärä", y="pyöräilijöiden määrä", colour="data") +
+  scale_x_date(labels=date_format("%Y/%m"))
+ggsave(plot=p.data, file="a4f_figures/a4f_data_v1.png", width=8, height=3)
+
+
+
+
+# joo esim. Eläintarhanlahti 2009-2010
