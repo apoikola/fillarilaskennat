@@ -561,7 +561,7 @@ p.weekday <- ggplot(weekday.df, aes(x=Factor, y=Coefficient, ymin=Coefficient-SE
   geom_point(size=3, position=position_dodge(width=0.7)) + 
   geom_errorbar(width=0, position=position_dodge(width=0.7)) + 
   geom_hline(y=0, linetype="dashed") +
-  scale_y_continuous(breaks=y.vals3, labels=percent.vals3) +  
+  scale_y_continuous(breaks=y.vals3, labels=percent.vals3-100) +  
   labs(x=NULL, y="Vaikutus (%)", colour="viikonpäivä") +
   ggtitle("Viikonpäivien vaikutus") +
   coord_flip() + 
@@ -571,7 +571,7 @@ p.weekday2 <- ggplot(weekday.df, aes(x=Weekday, y=Coefficient, ymin=Coefficient-
   geom_point(size=3, position=position_dodge(width=0.7)) + 
   geom_errorbar(width=0, position=position_dodge(width=0.7)) + 
   geom_hline(y=0, linetype="dashed") +
-  scale_y_continuous(breaks=y.vals3, labels=percent.vals3) +  
+  scale_y_continuous(breaks=y.vals3, labels=percent.vals3-100) +  
   labs(x=NULL, y="Vaikutus (%)", colour="viikonpäivä") +
   ggtitle("Viikonpäivien vaikutus") +
   coord_flip() + 
