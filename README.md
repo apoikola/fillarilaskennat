@@ -1,6 +1,9 @@
 Fillarilaskennat
 ================
 
+
+## TODO: Siivoa datan esikäsittely-, mallinnus- ja visualisointikoodit ja dokumentoi paremmin.
+
 Ideana on polkupyörien konelaskentapisteiden datan yhdistäminen ilmatieteenlaitoksen säähistoriadataan - kuinka paljon säätila oikeasti vaikuttaa pyöräilymääriin ja on trendeissä tapahtunut muutoksia vuosien kuluessa?
 
 Kansiot:
