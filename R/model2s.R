@@ -12,7 +12,7 @@ s <- sampling(m, chains=1, iter=500, seed=3,
                 count=d$count, tday=d$tday, site=as.integer(d$main.site), holiday=as.integer(d$holiday), 
                 weekday=as.integer(d$weekday)
                 ),
-              pars=c("ktemp", "iphi", "intercept"),
+              #pars=c("ktemp", "iphi", "intercept"),
               refresh=10)#, control=list(metric="diag_e", stepsize_jitter=0.3))
 plot(s)
 traceplot(s)
