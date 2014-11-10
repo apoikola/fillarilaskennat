@@ -1,8 +1,20 @@
 Fillarilaskennat
 ================
 
+This repository contains data and code for processing, modeling and visualizing bike count data in Helsinki. Most of the material is in Finnish. An English summary of the modeling efforts is coming...
 
-## TODO: Siivoa datan esikäsittely-, mallinnus- ja visualisointikoodit ja dokumentoi paremmin.
+## Fillarilaskennat artikkeli
+
+Fillarilaskennoista kirjoitettiin artikkeli, joka lähetettiin [Apps4Finland 2014 -kilpailun](http://apps4finland.fi/) hahmota-sarjaan. 
+
+* Lue [artikkeli](https://github.com/apoikola/fillarilaskennat/raw/master/Fillarilaskennatartikkeli.pdf) pdf:nä
+* Artikkelin [kirjoitusversio](http://bit.ly/fillarilaskennat_artikkeli) nähtävillä Google Docsissa
+* Apps4Finland [kilpailutyö](https://trello.com/c/vV0K5hmr/165-pyoraily-on-arkista-touhua-datajournalistisin-keinoin-tarkasteltu-pyorailymaarien-trendeja-helsingissa-10-vuoden-ajalta) 
+
+Artikkelin taustalla olevan tilastollisen mallin koodit löytyvät tästä reposta. Koodien siivous ja dokumentointi on **työn alla**.
+
+
+## Taustaa
 
 Ideana on polkupyörien konelaskentapisteiden datan yhdistäminen ilmatieteenlaitoksen säähistoriadataan - kuinka paljon säätila oikeasti vaikuttaa pyöräilymääriin ja on trendeissä tapahtunut muutoksia vuosien kuluessa?
 
@@ -21,7 +33,7 @@ Data haettu [FMI:n rajapinnasta](https://ilmatieteenlaitos.fi/avoin-data)
 rrday=sade, tday=keskilämpötila, snow=lumen paksuus(?), tmin=minimilämpötila, tmax=maksimilämpötila
 
 
-## Helsingin koneellisetn pyörälaskentojen data
+## Helsingin koneellisten pyörälaskentojen data
 
 Helsingissä on nykyisin (vuonna 2012) 12 konelaskentapistettä.  Viidessä pisteessä lasketaan ympäri vuoden ja muissa noin huhtikuusta syyskuun loppuun.  Laskennat tehdään siis vuorokauden ympäri.  Tulokset ovat 15 minuutin välein, mutta tulokset otetaan tunneittain. Laskennat tehdään Marksmanilla. Tiedot käydään imaisemassa kerran kuukaudessa. Marksmanin tuloksista ne siirretään Exceliin, johon ne otetaan vuorokausilukuina. Pisteet, joissa lasketaan, kuvaavat suurimmaksi osaksi työmatkaliikennettä, osa vapaa-ajan liikennettä ja osa asiointiliikennettä.
  
