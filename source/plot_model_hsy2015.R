@@ -4,6 +4,8 @@
 message("Need to run 'plot_model.R' first!")
 source("source/plot_model.R")
 theme_set(theme_bw(base_size = 16))
+library("lubridate")
+library("tidyr")
 
 fig.folder <- "hsy_2015"
 
@@ -46,7 +48,7 @@ bike.dat %>%
 weather.df %>%
   mutate(date=ymd(date), Year = year(date), Day=yday(date)) %>%
   gather(Measurement, Value, tday:tmin) %>%
-  mutate(Measurement = factor(temp.df$Measurement, levels=c("tmax", "tday", "tmin"))) %>%
+  mutate(Measurement = factor(Measurement, levels=c("tmax", "tday", "tmin"))) %>%
   filter(name == "Helsinki Kaisaniemi" & Year==2007) %>%
   ggplot(data =., aes(x=Day, y=Value, colour=Measurement)) + 
   geom_path() + facet_grid(Year ~ name) +
