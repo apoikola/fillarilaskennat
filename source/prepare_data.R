@@ -1,13 +1,12 @@
+# Script for preparing data for modeling
+
 library("dplyr")
 library("ggplot2")
-#library("lubridate")
-#library("tidyr")
 library("reshape2")
 
-
-bike.raw <- tbl_df(read.table(file=pipe("python processed/parse.py"), sep=" ", header=T))
-saveRDS(bike.raw, "processed/bike_raw.rds")
-bike.raw <- readRDS("processed/bike_raw.rds")
+bike.raw <- tbl_df(read.table(file=pipe("python source/parse.py"), sep=" ", header=T))
+saveRDS(bike.raw, "model_data/bike_raw.rds")
+bike.raw <- readRDS("model_data/bike_raw.rds")
 
 if (F) {
   # Mistähän nämä duplikaatit tulevat? (Sama data monessa failissa.)
@@ -57,7 +56,7 @@ lagged.weather <- d %>% select(day, rrday, snow, tday, tmin, tmax) %>%
 d <- inner_join(lagged.weather, d, by="day") %>% mutate(dsnow=snow1-snow, dtemp=tday1-tday)
 
 
-if (F) {
+if (T) {
   m6 <- gam(count ~ s(yday, k=30, bs="cc") + 
               s(tday, k=10) + year + holiday +
               rrday + snow + 
@@ -77,11 +76,11 @@ if (F) {
   rbad <- dr %>% filter(res< -4 | res>4) %>% group_by(file) %>%select(file, res) %>% 
     summarise(n=n(), res=mean(res)) 
   bad.files <- as.character(rbad$file)
-  saveRDS(bad.files, "processed/bad_files.rds")
+  saveRDS(bad.files, "model_data/bad_files.rds")
   if (F) message(paste(rbad$file, collapse=" ")) # for less
 }
 
-d <- d %>% filter(!(file %in% readRDS("processed/bad_files.rds")))
+d <- d %>% filter(!(file %in% readRDS("model_data/bad_files.rds")))
 
 # FIXME
 # - residuaalien korrelaatioita pitäis katsoa
@@ -109,3 +108,4 @@ aug.dates <- paste(rep(2000:2020, each=length(aug.days)), aug.days, sep="-")
 
 d <- mutate(d, july=date %in% july.dates, near.july=date %in% near.july.dates) #june=date%in%june.dates, aug=date%in%aug.dates
 
+saveRDS(d, file="model_data/data_prepared.rds")

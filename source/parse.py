@@ -1,6 +1,6 @@
 import re, os, datetime
 
-file_shell_rex = "data/200[0-9]_[0-9][0-9]_[a-z]*/*.2[0-9][0-9]"
+file_shell_rex = "data_orig/200[0-9]_[0-9][0-9]_[a-z]*/*.2[0-9][0-9]"
 site_rex = re.compile("^\*SITE NUMB\s*ER: ([0-9\s]+)$")
 channel_rex = re.compile("^\*CHANNEL\s*:\s+([0-9]+)\s+OF")
 date_rex = re.compile("^DATE\s+([0-9]?[0-9])\s*/([0-1]?[0-9])/([0-3]?[0-9])\s[0-9\s]+AVERAGE$")
@@ -93,7 +93,7 @@ for errors, (filename, site, channel, dtuple, iday, hour, count) in data_lines(e
     print "%s %s %s %s %s %s %s %s %s" % (
       (filename, site, channel) + date_vars(dtuple, iday) + (hour, "NA" if count==None else count))
 
-logfile = open("processed/errors.log", "w")
+logfile = open("model_data/errors.log", "w")
 for error in errors:
   print >>logfile, error
 logfile.close()

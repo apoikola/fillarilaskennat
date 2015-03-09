@@ -1,20 +1,24 @@
 # Script for plotting the output of the bike count model
+library("dplyr")
+library("ggplot2")
+theme_set(theme_bw(base_size = 16))
+library("gridExtra")
+library("reshape2")
+library("scales")
+library("mgcv")
+
 
 ## PLOT M7 WITH GGPLOT2 ########
 
+# Load prepared data, done in 'source/prepare_data.R'
+d <- readRDS("model_data/data_prepared.rds")
 # Load model object created in 
-m7 <- readRDS("processed/m7.rds")
-
-# Custom colour theme
-# install.packages("ggthemes")
-# library("ggthemes")
-theme_set(theme_bw(base_size = 16))
-# theme_set(theme_solarized(light=FALSE))
+m7 <- readRDS("model_data/m7.rds")
 
 
 # For plotting GAM smooths with ggplot2
 # from http://stackoverflow.com/questions/19735149/is-it-possible-to-plot-the-smooth-components-of-a-gam-fit-with-ggplot2
-source("R/functions.R")
+source("source/functions.R")
 model <- m7
 
 # Use real main.site names
@@ -67,10 +71,10 @@ p.resid <- ggplot(resid.df, aes(x=date, y=residuals)) +
   theme(strip.text.y=element_text(angle=0))
 
 p.data <- arrangeGrob(p.rp, p.resid, ncol=1)
-ggsave(plot=p.data, file="figures/Fillari_M7_data_v3.png", width=8, height=15)
+# ggsave(plot=p.data, file="figures/Fillari_M7_data_v3.png", width=8, height=15)
 
 # List biggest residuals
-write.csv(head(resid.df[order(abs(resid.df$residuals), decreasing = T), ], 100), file="processed/M7_residuals_v3.csv")
+# write.csv(head(resid.df[order(abs(resid.df$residuals), decreasing = T), ], 100), file="processed/M7_residuals_v3.csv")
 
 ## Plot continuous smooths
 # Remove categorical variables from smooth plots
@@ -242,64 +246,5 @@ p.ci <- ggplot(ci.df, aes(x=Factor, y=Coefficient, ymin=Coefficient-SE, ymax=Coe
 p.f1 <- arrangeGrob(p.cm, p.ci, nrow=1)
 p.f2 <- arrangeGrob(p.cms, p.cw, nrow=1)
 p.fillari <- arrangeGrob(p.smooth, p.f1, p.f2, ncol=1, heights=c(1, 1, 2))
-ggsave(plot=p.fillari, file="figures/Fillari_M7_model_v3.png", width=12, height=15)
-
-## PLOTS FOR A4F DATA JOURNALISM PIECE #######
-
-# # Temperature
-# tday.df <- droplevels(subset(smooths, x.var == "tday\n(mean temperature for day)"))
-# p.temperature <- ggplot(tday.df, aes(x=x.val, y=value)) + geom_line() + 
-#   geom_line(aes(y=value + 2*se), linetype="dashed") + 
-#   geom_line(aes(y=value - 2*se), linetype="dashed") +
-#   scale_y_continuous(breaks=y.vals, labels=percent.vals, limits=range(smooths$value)) +
-#   geom_hline(y=0, linetype="dashed") + 
-#   labs(x="Temperature", y="Effect (%)")
-# 
-# # Main effects
-# main.df <- cm.df
-# factors.10 <- c("year", "rrday", "snow", "rrday1", "I(pmax(0, dsnow))")
-# main.df[main.df$Factor %in% factors.10, "Coefficient"] <- 10*main.df[main.df$Factor %in% factors.10, "Coefficient"]
-# main.df[main.df$Factor %in% factors.10, "SE"] <- 10*main.df[main.df$Factor %in% factors.10, "SE"]
-# levels(main.df$Factor)[levels(main.df$Factor) %in% factors.10] <- paste0(levels(main.df$Factor)[levels(main.df$Factor) %in% factors.10], "_10")
-# p.main <- ggplot(main.df, aes(x=Factor, y=Coefficient, ymin=Coefficient-SE, ymax=Coefficient+SE)) + 
-#   geom_point(size=3) + 
-#   geom_errorbar(width=0) + 
-#   ggtitle("Main effects") + 
-#   labs(x=NULL, y="Effect (%)") +
-#   scale_y_continuous(breaks=y.vals3, labels=percent.vals3) +
-#   geom_hline(y=0, linetype="dashed") +
-#   coord_flip()
-# 
-# 
-# # Main site
-# # show baseline, holidayTRUE, year
-# site.df <- droplevels(subset(cms.df, Factor %in% c("baseline", "year", "holidayTRUE")))
-# site.df[site.df$Factor=="year", "Coefficient"] <- 10*site.df[site.df$Factor=="year", "Coefficient"]
-# site.df[site.df$Factor=="year", "SE"] <- 10*site.df[site.df$Factor=="year", "SE"]
-# levels(site.df$Factor)[3] <- "years_10"
-# p.mainsite <- ggplot(site.df, aes(x=Factor, y=Coefficient, ymin=Coefficient-SE, ymax=Coefficient+SE, colour=main.site.named)) + 
-#   geom_point(size=3, position=position_dodge(width=0.4)) + 
-#   geom_errorbar(width=0, position=position_dodge(width=0.4)) + 
-#   geom_hline(y=0, linetype="dashed") +
-#   scale_y_continuous(breaks=y.vals3, labels=percent.vals3) +  
-#   labs(x=NULL, y="Effect (%)") +
-#   ggtitle("Main site interactions") +
-#   coord_flip() + 
-#   guides(colour = guide_legend(reverse=TRUE))
-# 
-# # Weekday
-# # show baseline, AnyRain, AnySnow, 
-# weekday.df <- droplevels(subset(cw.df, Factor %in% c("baseline", "AnyRain", "AnySnow")))
-# p.weekday <- ggplot(weekday.df, aes(x=Factor, y=Coefficient, ymin=Coefficient-SE, ymax=Coefficient+SE, colour=Weekday)) + 
-#   geom_point(size=3, position=position_dodge(width=0.4)) + 
-#   geom_errorbar(width=0, position=position_dodge(width=0.4)) + 
-#   geom_hline(y=0, linetype="dashed") +
-#   scale_y_continuous(breaks=y.vals3, labels=percent.vals3) +  
-#   labs(x=NULL, y="Effect (%)") +
-#   ggtitle("Weekday interactions") +
-#   coord_flip() + 
-#   guides(colour = guide_legend(reverse=TRUE))
-# 
-# p.a4f1 <- arrangeGrob(p.temperature, p.main, p.mainsite, p.weekday, ncol=1)
-# ggsave(plot=p.a4f1, file="figures/Fillari_M7_model_A4F_v1.png", width=8, height=16)
+# ggsave(plot=p.fillari, file="figures/Fillari_M7_model_v3.png", width=12, height=15)
 
