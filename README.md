@@ -7,18 +7,18 @@ This repository contains data and code for processing, modeling and visualizing 
 
 Data
 
-* Original (messy) data in folder `data_orig`
-* Cleaned data (from R scripts) in folder `data_clean`
+* Original (messy) data in folder `data_orig`.
+* Cleaned data (from R scripts) in folder `data_clean`.
 * Run the Python script `parse.py` to obtain a better version of the cleaned data.
-* 
+* Wather data (and corresponding script) from FMI in folder `fmi_weather`.
 
 Important scripts (in the `source` folder)
 
-* R scripts for cleaning the data: `liikenne_20120313.R` and `liikenne_20140927.R`
-* Python script for cleaning the data: `parse.py`
-* R script for cleaning and preparing the data for modeling: `prepare_data.R`
-* R script for running the GAM model: `run_model.R`
-* R script for plotting the model output: `plot_model.R`
+* R scripts for cleaning the data: `liikenne_20120313.R` and `liikenne_20140927.R`.
+* Python script for cleaning the data: `parse.py`.
+* R script for cleaning and preparing the data for modeling: `prepare_data.R`.
+* R script for running the GAM model: `run_model.R`.
+* R script for plotting the model output: `plot_model.R`.
 
 
 Note! The folders were renamed at some point, so all scripts may not work anymore!
@@ -26,12 +26,12 @@ Note! The folders were renamed at some point, so all scripts may not work anymor
 
 ## Fillarilaskennat artikkeli
 
-Fillarilaskennoista kirjoitettiin artikkeli, joka lähetettiin [Apps4Finland 2014 -kilpailun](http://apps4finland.fi/) hahmota-sarjaan. 
+Fillarilaskentadatan analyysistä kirjoitettiin artikkeli: 
 
 * Artikkeli julkaistu [Kaupunkifillari-blogissa](http://www.kaupunkifillari.fi/blog/2015/03/04/pyoraily-on-arkista-touhua/)
+* Apps4Finland 2014 [kilpailutyö](https://trello.com/c/vV0K5hmr/165-pyoraily-on-arkista-touhua-datajournalistisin-keinoin-tarkasteltu-pyorailymaarien-trendeja-helsingissa-10-vuoden-ajalta) 
 * Artikkeli [PDF:nä](https://github.com/apoikola/fillarilaskennat/raw/master/Fillarilaskennatartikkeli.pdf)
 * Artikkelin [kirjoitusversio](http://bit.ly/fillarilaskennat_artikkeli) nähtävillä Google Docsissa
-* Apps4Finland [kilpailutyö](https://trello.com/c/vV0K5hmr/165-pyoraily-on-arkista-touhua-datajournalistisin-keinoin-tarkasteltu-pyorailymaarien-trendeja-helsingissa-10-vuoden-ajalta) 
 * Työtä varten saimme rahoitusta [Datademosta](http://datademo.fi/tiedote_20102014/)
 
 Artikkelin taustalla olevan tilastollisen mallin koodit löytyvät tästä reposta. Artikkelissa käytetyt kuvat on tuotettu skriptiillä `source/plot_model_a4f2014.R`. Mallin tarkempi kuvaus työn alla.
@@ -45,7 +45,7 @@ Kansiot:
 
 * _[source/](https://github.com/apoikola/fillarilaskennat/tree/master/source)_  Datan siivoukseen ja analyysiin liittyvät R-scriptit.
 * _[data_orig/](https://github.com/apoikola/fillarilaskennat/tree/master/data_orig)_ Kansiossa on vuosien 2004-2011 polkupyörien konelaskentadatat alkuperäisinä (saatu Helsingin kaupunkisuunnitteluvirastosta), [Konelaskentapisteiden koordinaatit](https://github.com/apoikola/fillarilaskennat/blob/master/data_orig/Laskentapisteet%202011%20-%20Laskentapisteet%202011%20FIX.csv), sekä [Kaisaniemen sääaseman havainnot 01/2004 - 08/2014](https://github.com/apoikola/fillarilaskennat/blob/master/data_orig/kaisaniemi_saa_200401-201408.csv)
-* _[data_clean/](https://github.com/apoikola/fillarilaskennat/tree/master/data_clean)_ Alkuperäisestä konelaskentadatasta scriptillä tuotetut siivotut datasetit (esim. _[kuu_20140927.csv](https://github.com/apoikola/fillarilaskennat/blob/master/output/%20kuu_20140927.csv)_)
+* _[data_clean/](https://github.com/apoikola/fillarilaskennat/tree/master/data_clean)_ Alkuperäisestä konelaskentadatasta scriptillä tuotetut siivotut datasetit (esim. _[kuu_20140927.csv](https://github.com/apoikola/fillarilaskennat/blob/master/data_clean/%20kuu_20140927.csv)_)
 
 
 
