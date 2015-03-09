@@ -109,7 +109,7 @@ p.data <- arrangeGrob(p.rp, p.resid, ncol=1)
 ggsave(plot=p.data, file="figures/Fillari_M7_data_v3.png", width=8, height=15)
 
 # List biggest residuals
-write.csv(head(resid.df[order(abs(resid.df$residuals), decreasing = T), ], 100), file="M7_residuals_v3.csv")
+write.csv(head(resid.df[order(abs(resid.df$residuals), decreasing = T), ], 100), file="processed/M7_residuals_v3.csv")
 
 ## Plot continuous smooths
 # Remove categorical variables from smooth plots
