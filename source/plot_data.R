@@ -8,7 +8,7 @@ library("tidyr")
 ## VISUALIZE FILLARIDATA ########
 
 # Read fillarilaskennat data
-bike.raw <- tbl_df(read.csv("output/ kuu_20140927.csv"))
+bike.raw <- tbl_df(read.csv("data_clean/ kuu_20140927.csv"))
 bike.raw$Date <- ymd(bike.raw$Date)
 
 # Compute sums over years, months, weeks
