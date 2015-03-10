@@ -22,6 +22,10 @@ bike.dat <- bike.raw %>%
   group_by(LocationID2, Year, Day, WeekEnd) %>%
   summarise(Count=sum(Value, na.rm=TRUE))
 
+# Fix locations
+fix.loc <- c("107"="Eläintarhanlahti", "115"="Eteläesplanadi")
+bike.dat$LocationName <- fix.loc[as.character(bike.dat$LocationID2)]
+
 # Load preprocessed weather data
 load("fmi_weather/FMI_weather_Helsinki_PROCESSED_2004-01-01_2011-08-31.RData")
 
@@ -29,18 +33,20 @@ load("fmi_weather/FMI_weather_Helsinki_PROCESSED_2004-01-01_2011-08-31.RData")
 # 1 raw data
 
 # Plot daily sums
-ggplot(bike.dat, aes(x=Day, y=log10(Count), colour=WeekEnd)) + 
-  geom_point(size=1) + facet_grid(Year~LocationID2) + 
-  labs(y="Määrä (log)", x="Päivä", colour="Viikonloppu") +
+ggplot(bike.dat, aes(x=Day, y=Count, colour=WeekEnd)) + 
+  geom_point(size=1) + facet_grid(Year ~ LocationName) + 
+  labs(y="Määrä", x="Päivä", colour="Viikonloppu") +
+  scale_y_log10() + 
   theme(legend.position="top") + 
   ggsave(width=6, height=8, file=file.path(fig.folder, "raw_data.png"))
 
 ## 2 sample of bike data
 bike.dat %>%
-  filter(LocationID2 %in% c(107) & Year %in% 2007) %>%
-  ggplot(data =., aes(x=Day, y=log10(Count), colour=WeekEnd)) + 
-  geom_point(size=1) + facet_grid(Year~LocationID2) + 
-  labs(y="Määrä (log)", x="Päivä", colour="Viikonloppu") +
+  filter(LocationName == "Eläintarhanlahti" & Year == 2007) %>%
+  ggplot(data =., aes(x=Day, y=Count, colour=WeekEnd)) + 
+  geom_point(size=1) + facet_grid(Year ~ LocationName) + 
+  labs(y="Määrä", x="Päivä", colour="Viikonloppu") +
+  scale_y_log10() + 
   theme(legend.position="none") + 
   ggsave(width=5, height=3, file=file.path(fig.folder, "raw_data_subset.png"))
 
@@ -106,10 +112,10 @@ p.main.discrete <- ggplot(main.discrete.df, aes(y=Factor, x=Coefficient, xmin=Co
 
 
 # 7 weekdays
-weekday.df <- droplevels(subset(cw.df, Factor %in% c("baseline", "AnyRain", "AnySnow")))
+weekday.df <- droplevels(subset(cw.df, Factor %in% c("baseline", "AnyRain")))
 levels(weekday.df$Weekday) <- c("sunnuntai", "lauantai", "perjantai", "torstai", 
                                 "keskiviikko", "tiistai", "maanantai")
-levels(weekday.df$Factor) <- c("muutos\nsateella", "muutos kun\nlunta maassa", "lähtötaso")
+levels(weekday.df$Factor) <- c("muutos\nsateella", "lähtötaso")
 ggplot(weekday.df, aes(x=Factor, y=Coefficient, ymin=Coefficient-SE, ymax=Coefficient+SE, colour=Weekday)) + 
   geom_point(size=3, position=position_dodge(width=0.7)) + 
   geom_errorbar(width=0, position=position_dodge(width=0.7)) + 
@@ -125,7 +131,8 @@ ggplot(weekday.df, aes(x=Factor, y=Coefficient, ymin=Coefficient-SE, ymax=Coeffi
 
 # 8 location/site
 
-site.df <- droplevels(subset(cms.df, Factor %in% c("baseline", "year", "holidayTRUE")))
+site.df <- droplevels(subset(cms.df, Factor %in% c("baseline", "year", "holidayTRUE") &
+                               main.site.named != "Tuntematon"))
 site.df[site.df$Factor=="year", "Coefficient"] <- 10*site.df[site.df$Factor=="year", "Coefficient"]
 site.df[site.df$Factor=="year", "SE"] <- 10*site.df[site.df$Factor=="year", "SE"]
 levels(site.df$Factor)[3] <- "years_10"

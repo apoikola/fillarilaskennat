@@ -66,7 +66,7 @@ Käsilaskennoissa otetaan laskenta-aika klo 7-19, vuorokausi (kerroin konelasken
  
 Käsilaskentojen yhteydessä tehdään suunnittelijoiden toivomia jalankulkulaskentoja.
  
-Pyöräilystä tehdään vuosittain muistio, joka on kaupunkisuunnitteluviraston nettisivuille. Lisäksi siellä kartat pyörä- ja jalankulkulaskennoista. http://www.hel.fi/hki/ksv/fi/Liikennesuunnittelu/Liikennetutkimus
+Pyöräilystä tehdään vuosittain muistio, joka on [kaupunkisuunnitteluviraston nettisivuilla](http://www.hel.fi/www/Helsinki/fi/kartat-ja-liikenne/kadut-ja-liikennesuunnittelu/tutkimus-ja-tilastot/). Lisäksi siellä kartat pyörä- ja jalankulkulaskennoista.
 
 Datassa käytetyt paikkamerkinnät:
 
